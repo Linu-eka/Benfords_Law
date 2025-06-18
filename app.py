@@ -1,10 +1,10 @@
 import tkinter as tk
 from tkinter import filedialog as fd
+from process_file import ProcessFile
 
 def select_file(filename_label):
     filetypes = (
         ("CSV files", "*.csv"),
-        ("All files", "*.*")
     )
 
     file = fd.askopenfiles(
@@ -15,6 +15,9 @@ def select_file(filename_label):
 
     if file:
         filename_label.config(text=f"Selected: {file[0].name}")
+        amounts = ProcessFile(file[0].name)
+        print("Amounts extracted:", amounts)  # For debugging purposes
+
     else:
         filename_label.config(text="No file selected")
 
