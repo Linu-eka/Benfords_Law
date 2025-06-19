@@ -3,6 +3,11 @@ from tkinter import filedialog as fd
 from process_file import ProcessFile
 from benfords import calculate_benfords
 from scipy.stats import chisquare
+import numpy as np
+def mean_absolute_deviation(observed, expected):
+    observed_prop = np.array(observed) / sum(observed)
+    expected_prop = np.array(expected) / sum(expected)
+    return np.mean(np.abs(observed_prop - expected_prop))
 
 def select_file(filename_label, result_text):
     filetypes = (
@@ -42,23 +47,25 @@ def select_file(filename_label, result_text):
         
         actual_count = actual_count_list
         expected_count = list(expected_count.values())
-        print(f"Actual Count: {actual_count}")
-        print(f"Expected Count: {expected_count}")
+        
 
-        chi2_stat, p_value = chisquare(actual_count, expected_count)
-        
-        
+        deviation = mean_absolute_deviation(actual_count, expected_count)
         formatted = ""
         # Format the comparison_result dictionary for display
         for digit, data in comparison_result.items():
             formatted += f"Digit: {digit} Expected: {data['expected']:.2f}% Real: {data['real']:.2f}% Difference: {data['difference']:.2f}%\n"
 
         
-        if p_value < 0.05:
+        if deviation < 0.006:
             
-            formatted += "\nBenford's Law Violation Detected!\n"
+            formatted += "\n Benford's Law is satisfied.\n"
+        elif deviation > 0.006 and deviation < 0.012:
+            formatted += "\n Benford's Law is moderately satisfied.\n"
+        elif deviation > 0.012:
+            formatted += "\n Benford's Law is NOT satisfied.\n"
         else:
-            formatted += "\nNo Benford's Law Violation Detected.\n"
+            formatted += "\n Unable to determine if Benford's Law is satisfied.\n"
+        
         
         result_text.insert(tk.END, formatted)
         result_text.config(state='disabled')
