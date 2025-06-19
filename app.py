@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog as fd
 from process_file import ProcessFile
 from benfords import calculate_benfords
+from scipy.stats import chisquare
 
 def select_file(filename_label, result_text):
     filetypes = (
@@ -17,18 +18,48 @@ def select_file(filename_label, result_text):
     if file:
         '''
         This is where we handle file selection, file processing, and displaying results.
-        '''
+        '''        
         filename_label.config(text=f"Selected: {file[0].name}")
         amounts = ProcessFile(file[0].name)
-        total_items, comparison_result = calculate_benfords(amounts)
+
+        # Handle the case where the file could not be processed or does not contain valid data
+        if amounts is None:
+            result_text.config(state='normal')
+            result_text.delete(1.0, tk.END)
+            result_text.insert(tk.END, "Error processing file. Please ensure it contains valid numeric data.")
+            result_text.config(state='disabled')
+            return
+        
+        # Calculate Benford's Law comparison
+        _,actual_count,expected_count, comparison_result = calculate_benfords(amounts)
         result_text.config(state='normal')
         result_text.delete(1.0, tk.END)
 
+        # Use chi squared test to compare expected and real distributions
+        actual_count_list = [0] * 9
+        for digit in range(1, 10):
+            actual_count_list[digit - 1] = actual_count.get(str(digit), 0)
+        
+        actual_count = actual_count_list
+        expected_count = list(expected_count.values())
+        print(f"Actual Count: {actual_count}")
+        print(f"Expected Count: {expected_count}")
+
+        chi2_stat, p_value = chisquare(actual_count, expected_count)
+        
+        
         formatted = ""
         # Format the comparison_result dictionary for display
         for digit, data in comparison_result.items():
             formatted += f"Digit: {digit} Expected: {data['expected']:.2f}% Real: {data['real']:.2f}% Difference: {data['difference']:.2f}%\n"
 
+        
+        if p_value < 0.05:
+            
+            formatted += "\nBenford's Law Violation Detected!\n"
+        else:
+            formatted += "\nNo Benford's Law Violation Detected.\n"
+        
         result_text.insert(tk.END, formatted)
         result_text.config(state='disabled')
 
